@@ -4,12 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>E資格 ドリル問題集</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Hiragino Sans','Yu Gothic UI',sans-serif;background:#f0f0f0;color:#1a1a1a;min-height:100vh}
+body{font-family:'Hiragino Sans','Yu Gothic UI',sans-serif;background:#f0f0f0;color:#1a1a1a}
 .wrap{max-width:700px;margin:0 auto;padding:12px 12px 40px}
 h1{font-size:18px;font-weight:600;margin-bottom:2px}
 .sub{font-size:12px;color:#666;margin-bottom:14px}
+
+/* Auth screen */
+.auth-screen{background:#fff;border-radius:14px;border:1px solid #e0e0e0;padding:28px 24px;margin-top:20px}
+.auth-screen h2{font-size:17px;font-weight:600;margin-bottom:4px}
+.auth-screen p{font-size:13px;color:#666;margin-bottom:20px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:#555;margin-bottom:4px;font-weight:500}
+.field input{width:100%;border:1px solid #ccc;border-radius:8px;padding:10px 12px;font-size:15px;outline:none;-webkit-appearance:none}
+.field input:focus{border-color:#5856d6;box-shadow:0 0 0 3px rgba(88,86,214,.12)}
+.auth-btn{width:100%;padding:12px;border-radius:8px;border:none;background:#5856d6;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+.auth-btn:active{background:#4340c0}
+.auth-toggle{text-align:center;margin-top:14px;font-size:13px;color:#666}
+.auth-toggle a{color:#5856d6;cursor:pointer;text-decoration:underline}
+.auth-err{color:#c0392b;font-size:13px;margin-top:8px;min-height:18px}
+.auth-msg{color:#27ae60;font-size:13px;margin-top:8px}
+
+/* Header bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.user-info{font-size:12px;color:#666}
+.logout-btn{font-size:12px;color:#5856d6;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px}
+.logout-btn:hover{background:#ebebff}
 
 /* Stats */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
@@ -42,11 +64,7 @@ select{border:1px solid #ccc;border-radius:8px;padding:6px 10px;font-size:13px;b
 .qn{font-size:13px;font-weight:600;color:#5856d6}
 .ql{font-size:11px;color:#aaa}
 .qimg{width:100%;display:block}
-
-/* Answer area */
 .ans-area{padding:14px}
-
-/* Radio group */
 .radio-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .radio-label{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:10px;cursor:pointer;font-size:15px;font-weight:500;transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent;user-select:none}
 .radio-label:hover{border-color:#5856d6;background:#f5f5ff}
@@ -55,275 +73,360 @@ select{border:1px solid #ccc;border-radius:8px;padding:6px 10px;font-size:13px;b
 .radio-label.correct{border-color:#34c759;background:#f0fdf4;color:#166534}
 .radio-label.wrong{border-color:#ff3b30;background:#fef2f2;color:#991b1b}
 .radio-label.show-correct{border-color:#34c759;background:#f0fdf4;color:#166534}
-
-/* Check button */
 .check-row{display:flex;gap:8px;align-items:center}
 .check-row .btn{flex:1}
-
-/* Result */
 .result{margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.7;display:none}
 .rc{background:#f0fdf4;border:1px solid #86efac;color:#166534}
 .rw{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
-.result .ebtn{margin-top:10px;display:block;width:100%;padding:10px;border-radius:8px;border:none;background:#34c759;color:#fff;font-size:14px;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.result .ebtn{margin-top:10px;display:block;width:100%;padding:10px;border-radius:8px;border:none;background:#34c759;color:#fff;font-size:14px;font-weight:500;cursor:pointer}
 .result .ebtn:active{background:#28a046}
-
-/* Nav */
 .nav{display:flex;gap:8px;justify-content:space-between;align-items:center}
 .nc{font-size:13px;color:#888}
 .nav .btn{flex:1;text-align:center}
-
-/* Note for fill-in questions */
 .fillin-note{font-size:12px;color:#888;background:#f8f8f8;border-radius:6px;padding:8px 10px;margin-bottom:10px;border-left:3px solid #ccc}
 .fillin-input{border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:16px;width:100%;outline:none;margin-bottom:10px;-webkit-appearance:none}
 .fillin-input:focus{border-color:#5856d6;box-shadow:0 0 0 3px rgba(88,86,214,.12)}
-
-@media(max-width:380px){
-  .radio-group{grid-template-columns:1fr 1fr}
-  .radio-label{font-size:14px;padding:9px 10px}
-  h1{font-size:16px}
-}
+.sync-badge{font-size:11px;color:#aaa;margin-left:6px}
+.sync-badge.ok{color:#34c759}
+.sync-badge.err{color:#ff3b30}
+.hidden{display:none!important}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>E資格 ドリル問題集</h1>
-  <p class="sub">全118問 ── 選択後「確認」、解答後は「Claudeに解説」で解説が表示されます</p>
+  <p class="sub">全118問 ── 回答はクラウドに自動保存、どの端末からでも続きから始められます</p>
 
-  <div class="stats">
-    <div class="stat"><div class="sv" id="st">118</div><div class="sl">総問数</div></div>
-    <div class="stat"><div class="sv ok" id="sc">0</div><div class="sl">正解</div></div>
-    <div class="stat"><div class="sv ng" id="sw">0</div><div class="sl">不正解</div></div>
-    <div class="stat"><div class="sv" id="sr">118</div><div class="sl">未回答</div></div>
-  </div>
-
-  <div class="prog-wrap">
-    <div class="prog-lbl"><span id="pl">0 / 118 回答済み</span><span id="pp">0%</span></div>
-    <div class="bar"><div class="bf" id="pf" style="width:0%"></div></div>
-  </div>
-
-  <div class="toolbar">
-    <input class="ji" type="number" id="jn" placeholder="問番号" min="1" max="118">
-    <button class="btn bs" onclick="jumpTo()">ジャンプ</button>
-    <select id="fm" onchange="applyFilter()">
-      <option value="all">全問題</option>
-      <option value="un">未回答のみ</option>
-      <option value="ng">不正解のみ</option>
-    </select>
-  </div>
-
-  <div class="card">
-    <div class="qhead">
-      <span class="qn" id="qn">Q1</span>
-      <span class="ql" id="ql"></span>
+  <!-- Auth screen -->
+  <div id="auth-screen" class="auth-screen">
+    <h2 id="auth-title">ログイン</h2>
+    <p id="auth-desc">メールアドレスとパスワードでログインしてください</p>
+    <div class="field">
+      <label>メールアドレス</label>
+      <input type="email" id="email" placeholder="example@email.com" autocomplete="email">
     </div>
-    <img class="qimg" id="qi" src="" alt="問題" loading="lazy">
-    <div class="ans-area">
-      <div id="ans-body"></div>
-      <div class="check-row">
-        <button class="btn bp" id="check-btn" onclick="check()">確認</button>
+    <div class="field">
+      <label>パスワード</label>
+      <input type="password" id="password" placeholder="8文字以上" autocomplete="current-password">
+    </div>
+    <div class="auth-err" id="auth-err"></div>
+    <div class="auth-msg" id="auth-msg"></div>
+    <button class="auth-btn" id="auth-submit" onclick="authSubmit()">ログイン</button>
+    <div class="auth-toggle">
+      アカウントをお持ちでない方は <a onclick="toggleMode()">新規登録</a>
+    </div>
+  </div>
+
+  <!-- Main drill screen -->
+  <div id="drill-screen" class="hidden">
+    <div class="topbar">
+      <span class="user-info" id="user-email-disp"></span>
+      <button class="logout-btn" onclick="logout()">ログアウト</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="sv" id="st">118</div><div class="sl">総問数</div></div>
+      <div class="stat"><div class="sv ok" id="sc">0</div><div class="sl">正解</div></div>
+      <div class="stat"><div class="sv ng" id="sw">0</div><div class="sl">不正解</div></div>
+      <div class="stat"><div class="sv" id="sr">118</div><div class="sl">未回答</div></div>
+    </div>
+
+    <div class="prog-wrap">
+      <div class="prog-lbl"><span id="pl">0 / 118 回答済み</span><span id="pp">0%</span></div>
+      <div class="bar"><div class="bf" id="pf" style="width:0%"></div></div>
+    </div>
+
+    <div class="toolbar">
+      <input class="ji" type="number" id="jn" placeholder="問番号" min="1" max="118">
+      <button class="btn bs" onclick="jumpTo()">ジャンプ</button>
+      <select id="fm" onchange="applyFilter()">
+        <option value="all">全問題</option>
+        <option value="un">未回答のみ</option>
+        <option value="ng">不正解のみ</option>
+      </select>
+      <span class="sync-badge" id="sync-badge"></span>
+    </div>
+
+    <div class="card">
+      <div class="qhead">
+        <span class="qn" id="qn">Q1</span>
+        <span class="ql" id="ql"></span>
       </div>
-      <div class="result" id="res"></div>
+      <img class="qimg" id="qi" src="" alt="問題" loading="lazy">
+      <div class="ans-area">
+        <div id="ans-body"></div>
+        <div class="check-row">
+          <button class="btn bp" id="check-btn" onclick="check()">確認</button>
+        </div>
+        <div class="result" id="res"></div>
+      </div>
     </div>
-  </div>
 
-  <div class="nav">
-    <button class="btn bs" onclick="nav(-1)">← 前</button>
-    <span class="nc" id="nc"></span>
-    <button class="btn bs" onclick="nav(1)">次 →</button>
+    <div class="nav">
+      <button class="btn bs" onclick="nav(-1)">← 前</button>
+      <span class="nc" id="nc"></span>
+      <button class="btn bs" onclick="nav(1)">次 →</button>
+    </div>
   </div>
 </div>
 
 <script>
+const SUPABASE_URL = 'https://porgeuocbuwevjfqzimy.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcmdldW9jYnV3ZXZqZnF6aW15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1NzMwNTMsImV4cCI6MjEwMTE0OTA1M30.xBBc8N8FeTKT8OzRwIVMOUOj0iIPSUFCIjlrXvJJXqk';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
 const DATA = [{"num": 1, "answer": "D"}, {"num": 2, "answer": "B"}, {"num": 3, "answer": "B"}, {"num": 4, "answer": "B"}, {"num": 5, "answer": "C"}, {"num": 6, "answer": "A"}, {"num": 7, "answer": "A"}, {"num": 8, "answer": "B"}, {"num": 9, "answer": "ア：A / イ：C / ウ：C"}, {"num": 10, "answer": "D"}, {"num": 11, "answer": "A"}, {"num": 12, "answer": "D"}, {"num": 13, "answer": "ア：B / イ：B"}, {"num": 14, "answer": "ア：A / イ：C"}, {"num": 15, "answer": "B"}, {"num": 16, "answer": "D"}, {"num": 17, "answer": "D"}, {"num": 18, "answer": "D"}, {"num": 19, "answer": "A"}, {"num": 20, "answer": "C"}, {"num": 21, "answer": "C"}, {"num": 22, "answer": "B"}, {"num": 23, "answer": "A"}, {"num": 24, "answer": "B"}, {"num": 25, "answer": "A"}, {"num": 26, "answer": "C"}, {"num": 27, "answer": "A"}, {"num": 28, "answer": "A"}, {"num": 29, "answer": "ア：G / イ：C / ウ：B"}, {"num": 30, "answer": "C"}, {"num": 31, "answer": "B"}, {"num": 32, "answer": "C"}, {"num": 33, "answer": "C"}, {"num": 34, "answer": "A"}, {"num": 35, "answer": "B"}, {"num": 36, "answer": "A"}, {"num": 37, "answer": "C"}, {"num": 38, "answer": "A"}, {"num": 39, "answer": "B"}, {"num": 40, "answer": "A"}, {"num": 41, "answer": "C"}, {"num": 42, "answer": "A"}, {"num": 43, "answer": "B"}, {"num": 44, "answer": "C"}, {"num": 45, "answer": "D"}, {"num": 46, "answer": "D"}, {"num": 47, "answer": "B"}, {"num": 48, "answer": "A"}, {"num": 49, "answer": "C"}, {"num": 50, "answer": "B"}, {"num": 51, "answer": "D"}, {"num": 52, "answer": "C"}, {"num": 53, "answer": "A"}, {"num": 54, "answer": "A"}, {"num": 55, "answer": "A"}, {"num": 56, "answer": "A"}, {"num": 57, "answer": "D"}, {"num": 58, "answer": "A"}, {"num": 59, "answer": "B"}, {"num": 60, "answer": "B"}, {"num": 61, "answer": "C"}, {"num": 62, "answer": "B"}, {"num": 63, "answer": "B"}, {"num": 64, "answer": "B"}, {"num": 65, "answer": "B"}, {"num": 66, "answer": "A"}, {"num": 67, "answer": "D"}, {"num": 68, "answer": "A"}, {"num": 69, "answer": "C"}, {"num": 70, "answer": "B"}, {"num": 71, "answer": "ア：D / イ：A"}, {"num": 72, "answer": "B"}, {"num": 73, "answer": "C"}, {"num": 74, "answer": "A"}, {"num": 75, "answer": "D"}, {"num": 76, "answer": "ア：B / イ：A / ウ：D"}, {"num": 77, "answer": "C"}, {"num": 78, "answer": "A"}, {"num": 79, "answer": "A"}, {"num": 80, "answer": "B"}, {"num": 81, "answer": "C"}, {"num": 82, "answer": "A"}, {"num": 83, "answer": "B"}, {"num": 84, "answer": "D"}, {"num": 85, "answer": "A"}, {"num": 86, "answer": "C"}, {"num": 87, "answer": "B"}, {"num": 88, "answer": "C"}, {"num": 89, "answer": "A"}, {"num": 90, "answer": "C"}, {"num": 91, "answer": "B"}, {"num": 92, "answer": "B"}, {"num": 93, "answer": "B"}, {"num": 94, "answer": "C"}, {"num": 95, "answer": "D"}, {"num": 96, "answer": "C"}, {"num": 97, "answer": "A"}, {"num": 98, "answer": "B"}, {"num": 99, "answer": "C"}, {"num": 100, "answer": "B"}, {"num": 101, "answer": "A"}, {"num": 102, "answer": "B"}, {"num": 103, "answer": "D"}, {"num": 104, "answer": "C"}, {"num": 105, "answer": "B"}, {"num": 106, "answer": "B"}, {"num": 107, "answer": "B"}, {"num": 108, "answer": "D"}, {"num": 109, "answer": "A"}, {"num": 110, "answer": "C"}, {"num": 111, "answer": "D"}, {"num": 112, "answer": "A"}, {"num": 113, "answer": "A"}, {"num": 114, "answer": "D"}, {"num": 115, "answer": "C"}, {"num": 116, "answer": "B"}, {"num": 117, "answer": "C"}, {"num": 118, "answer": "A"}];
 const IMGBASE = 'img/';
-
-// Questions with multi-part answers (ア、イ、ウ) — these get text input
 const MULTIPART = new Set([9,13,14,29,71,76]);
 
 let fi = DATA.map((_,i)=>i);
 let pos = 0;
 const ua = {}, uc = {};
+let isSignup = false;
 
-function cq(){ return DATA[fi[pos]]; }
+// ── Auth ──────────────────────────────────────────
+function toggleMode() {
+  isSignup = !isSignup;
+  document.getElementById('auth-title').textContent = isSignup ? '新規登録' : 'ログイン';
+  document.getElementById('auth-desc').textContent = isSignup
+    ? 'メールアドレスとパスワードを入力してください'
+    : 'メールアドレスとパスワードでログインしてください';
+  document.getElementById('auth-submit').textContent = isSignup ? '登録する' : 'ログイン';
+  document.querySelector('.auth-toggle').innerHTML = isSignup
+    ? 'すでにアカウントをお持ちの方は <a onclick="toggleMode()">ログイン</a>'
+    : 'アカウントをお持ちでない方は <a onclick="toggleMode()">新規登録</a>';
+  document.getElementById('auth-err').textContent = '';
+  document.getElementById('auth-msg').textContent = '';
+}
 
-function render(){
+async function authSubmit() {
+  const email = document.getElementById('email').value.trim();
+  const pass  = document.getElementById('password').value;
+  const errEl = document.getElementById('auth-err');
+  const msgEl = document.getElementById('auth-msg');
+  errEl.textContent = '';
+  msgEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'メールアドレスとパスワードを入力してください'; return; }
+
+  document.getElementById('auth-submit').disabled = true;
+  document.getElementById('auth-submit').textContent = '処理中...';
+
+  let result;
+  if (isSignup) {
+    result = await sb.auth.signUp({ email, password: pass });
+    if (!result.error) {
+      msgEl.textContent = '確認メールを送りました。メール内のリンクをクリックしてからログインしてください。';
+      document.getElementById('auth-submit').disabled = false;
+      document.getElementById('auth-submit').textContent = '登録する';
+      return;
+    }
+  } else {
+    result = await sb.auth.signInWithPassword({ email, password: pass });
+  }
+
+  if (result.error) {
+    errEl.textContent = result.error.message;
+    document.getElementById('auth-submit').disabled = false;
+    document.getElementById('auth-submit').textContent = isSignup ? '登録する' : 'ログイン';
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  Object.keys(ua).forEach(k=>delete ua[k]);
+  Object.keys(uc).forEach(k=>delete uc[k]);
+  document.getElementById('drill-screen').classList.add('hidden');
+  document.getElementById('auth-screen').classList.remove('hidden');
+}
+
+// ── Session listener ──────────────────────────────
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session) {
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('drill-screen').classList.remove('hidden');
+    document.getElementById('user-email-disp').textContent = session.user.email;
+    await loadProgress();
+    fi = DATA.map((_,i)=>i);
+    pos = 0;
+    render();
+  }
+});
+
+// ── Progress sync ────────────────────────────────
+function setSyncBadge(state) {
+  const el = document.getElementById('sync-badge');
+  if (state==='saving') { el.textContent='保存中...'; el.className='sync-badge'; }
+  else if (state==='ok') { el.textContent='✓ 保存済み'; el.className='sync-badge ok'; }
+  else if (state==='err') { el.textContent='⚠ 保存失敗'; el.className='sync-badge err'; }
+}
+
+async function loadProgress() {
+  setSyncBadge('saving');
+  const { data, error } = await sb.from('progress').select('question_num,user_answer,is_correct');
+  if (error) { setSyncBadge('err'); return; }
+  data.forEach(row => {
+    ua[row.question_num] = row.user_answer;
+    uc[row.question_num] = row.is_correct;
+  });
+  setSyncBadge('ok');
+}
+
+async function saveProgress(qnum, userAns, isCorrect) {
+  setSyncBadge('saving');
+  const { data: { user } } = await sb.auth.getUser();
+  const { error } = await sb.from('progress').upsert({
+    user_id: user.id,
+    question_num: qnum,
+    user_answer: userAns,
+    is_correct: isCorrect,
+    answered_at: new Date().toISOString()
+  }, { onConflict: 'user_id,question_num' });
+  setSyncBadge(error ? 'err' : 'ok');
+}
+
+// ── Drill logic ───────────────────────────────────
+function cq() { return DATA[fi[pos]]; }
+
+function render() {
   const q = cq();
   const imgIdx = String(fi[pos]+1).padStart(3,'0');
   document.getElementById('qi').src = IMGBASE + 'q' + imgIdx + '.jpg';
   document.getElementById('qn').textContent = 'Q' + q.num;
   document.getElementById('ql').textContent = (pos+1) + ' / ' + fi.length;
   document.getElementById('nc').textContent = (pos+1) + ' / ' + fi.length;
-
   renderAnsBody(q);
-
   const res = document.getElementById('res');
-  if(ua[q.num] !== undefined){
-    showRes(q, ua[q.num]);
-  } else {
-    res.style.display = 'none';
-    res.innerHTML = '';
-  }
-
+  if (ua[q.num] !== undefined) { showRes(q, ua[q.num]); }
+  else { res.style.display='none'; res.innerHTML=''; }
   updateStats();
 }
 
-function renderAnsBody(q){
+function renderAnsBody(q) {
   const body = document.getElementById('ans-body');
   const isMP = MULTIPART.has(q.num);
   const answered = ua[q.num] !== undefined;
-
-  if(isMP){
+  if (isMP) {
     const saved = ua[q.num] || '';
     body.innerHTML =
       '<div class="fillin-note">この問題は空欄補充（ア・イ・ウ）です。例: <strong>ア:A イ:B</strong> のように入力してください。</div>' +
-      '<input class="fillin-input" id="fi-input" type="text" placeholder="例: ア:A イ:B ウ:C" value="' + saved + '" autocapitalize="characters">';
-    if(!answered){
-      document.getElementById('fi-input').addEventListener('keydown', function(e){
-        if(e.key==='Enter') check();
-      });
-    } else {
-      document.getElementById('fi-input').disabled = true;
+      '<input class="fillin-input" id="fi-input" type="text" placeholder="例: ア:A イ:B ウ:C" value="' + saved + '" autocapitalize="characters"' + (answered?' disabled':'') + '>';
+    if (!answered) {
+      document.getElementById('fi-input').addEventListener('keydown', function(e) { if(e.key==='Enter') check(); });
     }
   } else {
     const choices = ['A','B','C','D'];
     const selectedAns = ua[q.num];
     const correctAns = q.answer.toUpperCase();
-
     let html = '<div class="radio-group">';
-    choices.forEach(function(c){
+    choices.forEach(function(c) {
       let cls = 'radio-label';
-      if(answered){
-        if(c === correctAns) cls += ' show-correct';
-        else if(c === selectedAns && selectedAns !== correctAns) cls += ' wrong';
-        else if(c === selectedAns && selectedAns === correctAns) cls += ' correct';
-      } else if(c === selectedAns){
-        cls += ' selected';
-      }
-      const checked = (c === selectedAns) ? 'checked' : '';
+      if (answered) {
+        if (c===correctAns) cls += ' show-correct';
+        else if (c===selectedAns && selectedAns!==correctAns) cls += ' wrong';
+      } else if (c===selectedAns) { cls += ' selected'; }
+      const checked = (c===selectedAns) ? 'checked' : '';
       const disabled = answered ? 'disabled' : '';
-      html += '<label class="' + cls + '">' +
-        '<input type="radio" name="choice" value="' + c + '" ' + checked + ' ' + disabled + ' onchange="onRadio(this)">' +
-        c + ' 番';
-      if(answered && c === correctAns) html += ' ✓';
-      else if(answered && c === selectedAns && selectedAns !== correctAns) html += ' ✗';
+      html += '<label class="'+cls+'"><input type="radio" name="choice" value="'+c+'" '+checked+' '+disabled+' onchange="onRadio(this)">'+c+' 番';
+      if (answered && c===correctAns) html += ' ✓';
+      else if (answered && c===selectedAns && selectedAns!==correctAns) html += ' ✗';
       html += '</label>';
     });
     html += '</div>';
     body.innerHTML = html;
   }
-
   document.getElementById('check-btn').disabled = answered;
   document.getElementById('check-btn').style.opacity = answered ? '0.5' : '1';
 }
 
-function onRadio(el){
-  // highlight selected
-  document.querySelectorAll('.radio-label').forEach(function(l){ l.classList.remove('selected'); });
+function onRadio(el) {
+  document.querySelectorAll('.radio-label').forEach(function(l) { l.classList.remove('selected'); });
   el.closest('.radio-label').classList.add('selected');
 }
 
-function check(){
+async function check() {
   const q = cq();
   const isMP = MULTIPART.has(q.num);
   let raw = '';
-
-  if(isMP){
+  if (isMP) {
     const inp = document.getElementById('fi-input');
     raw = (inp ? inp.value.trim().toUpperCase() : '');
-    if(!raw){ alert('回答を入力してください'); return; }
+    if (!raw) { alert('回答を入力してください'); return; }
   } else {
     const sel = document.querySelector('input[name=choice]:checked');
-    if(!sel){ alert('選択肢を選んでください'); return; }
+    if (!sel) { alert('選択肢を選んでください'); return; }
     raw = sel.value.toUpperCase();
   }
-
   ua[q.num] = raw;
-
-  // Normalize and compare
   const nu = raw.replace(/[\s\u3000:：\/]/g,'').replace(/[アイウ]/g,'');
   const nc2 = q.answer.toUpperCase().replace(/[\s\u3000:：\/]/g,'').replace(/[アイウ]/g,'');
   uc[q.num] = nu === nc2;
-
   renderAnsBody(q);
   showRes(q, raw);
   updateStats();
+  await saveProgress(q.num, raw, uc[q.num]);
 }
 
-function showRes(q, ans){
+function showRes(q, ans) {
   const ok = uc[q.num];
   const res = document.getElementById('res');
   res.style.display = 'block';
   const ebtn = '<button class="ebtn" onclick="explain('+q.num+')">Claudeに解説してもらう ↗</button>';
-  if(ok){
-    res.className = 'result rc';
-    res.innerHTML = '&#9989; <strong>正解！</strong>　正解：' + q.answer + ebtn;
+  if (ok) {
+    res.className='result rc';
+    res.innerHTML='&#9989; <strong>正解！</strong>　正解：'+q.answer+ebtn;
   } else {
-    res.className = 'result rw';
-    res.innerHTML = '&#10060; <strong>不正解</strong>　あなたの回答：' + ans +
-      '<br><strong>&#10004; 正解：' + q.answer + '</strong>' + ebtn;
+    res.className='result rw';
+    res.innerHTML='&#10060; <strong>不正解</strong>　あなたの回答：'+ans+'<br><strong>&#10004; 正解：'+q.answer+'</strong>'+ebtn;
   }
 }
 
-function explain(qnum){
+function explain(qnum) {
   const q = DATA[qnum-1];
-  const my = ua[qnum] || '（未回答）';
+  const my = ua[qnum]||'（未回答）';
   const ok = uc[qnum];
-  let msg = 'E資格の問題について解説してください（問題はPDF画像で確認しています）。\n\n【問番号】Q' + q.num +
-    '\n【正解】' + q.answer + '\n【私の回答】' + my + '\n【正誤】' + (ok?'正解':'不正解') + '\n\n';
-  if(ok){
-    msg += 'なぜこれが正解なのか、各選択肢のポイントも含めて解説してください。';
-  } else {
-    msg += '私の回答「' + my + '」はなぜ間違いで、正解「' + q.answer + '」はなぜ正しいのか、各選択肢も含めて詳しく解説してください。';
-  }
-  if(typeof sendPrompt === 'function'){
-    sendPrompt(msg);
-  } else {
-    alert('解説リクエスト:\n\n' + msg);
-  }
+  let msg = 'E資格の問題について解説してください（問題はPDF画像で確認しています）。\n\n【問番号】Q'+q.num+'\n【正解】'+q.answer+'\n【私の回答】'+my+'\n【正誤】'+(ok?'正解':'不正解')+'\n\n';
+  msg += ok
+    ? 'なぜこれが正解なのか、各選択肢のポイントも含めて解説してください。'
+    : '私の回答「'+my+'」はなぜ間違いで、正解「'+q.answer+'」はなぜ正しいのか、各選択肢も含めて詳しく解説してください。';
+  if (typeof sendPrompt==='function') { sendPrompt(msg); }
 }
 
-function nav(d){
+function nav(d) {
   pos = Math.max(0, Math.min(fi.length-1, pos+d));
   render();
 }
 
-function jumpTo(){
+function jumpTo() {
   const n = parseInt(document.getElementById('jn').value);
-  if(!n) return;
-  const idx = fi.findIndex(function(i){ return DATA[i].num===n; });
-  if(idx>=0){ pos=idx; render(); }
+  if (!n) return;
+  const idx = fi.findIndex(function(i) { return DATA[i].num===n; });
+  if (idx>=0) { pos=idx; render(); }
   else alert('Q'+n+' はフィルター結果にありません');
 }
 
-function applyFilter(){
+function applyFilter() {
   const m = document.getElementById('fm').value;
-  if(m==='all') fi=DATA.map(function(_,i){return i;});
-  else if(m==='un') fi=DATA.map(function(_,i){return i;}).filter(function(i){return ua[DATA[i].num]===undefined;});
-  else if(m==='ng') fi=DATA.map(function(_,i){return i;}).filter(function(i){return uc[DATA[i].num]===false;});
+  if (m==='all') fi=DATA.map(function(_,i){return i;});
+  else if (m==='un') fi=DATA.map(function(_,i){return i;}).filter(function(i){return ua[DATA[i].num]===undefined;});
+  else if (m==='ng') fi=DATA.map(function(_,i){return i;}).filter(function(i){return uc[DATA[i].num]===false;});
   pos=0;
-  if(fi.length===0){
-    alert('該当なし');
-    document.getElementById('fm').value='all';
-    fi=DATA.map(function(_,i){return i;});
-  }
+  if (fi.length===0) { alert('該当なし'); document.getElementById('fm').value='all'; fi=DATA.map(function(_,i){return i;}); }
   render();
 }
 
-function updateStats(){
-  const tot = DATA.length;
-  const ans = Object.keys(ua).length;
-  const ok = Object.values(uc).filter(Boolean).length;
-  const ng = Object.values(uc).filter(function(v){return v===false;}).length;
-  document.getElementById('sc').textContent = ok;
-  document.getElementById('sw').textContent = ng;
-  document.getElementById('sr').textContent = tot - ans;
-  const pct = Math.round(ans/tot*100);
-  document.getElementById('pl').textContent = ans + ' / ' + tot + ' 回答済み';
-  document.getElementById('pp').textContent = pct + '%';
-  document.getElementById('pf').style.width = pct + '%';
+function updateStats() {
+  const tot=DATA.length;
+  const ans=Object.keys(ua).length;
+  const ok=Object.values(uc).filter(Boolean).length;
+  const ng=Object.values(uc).filter(function(v){return v===false;}).length;
+  document.getElementById('sc').textContent=ok;
+  document.getElementById('sw').textContent=ng;
+  document.getElementById('sr').textContent=tot-ans;
+  const pct=Math.round(ans/tot*100);
+  document.getElementById('pl').textContent=ans+' / '+tot+' 回答済み';
+  document.getElementById('pp').textContent=pct+'%';
+  document.getElementById('pf').style.width=pct+'%';
 }
-
-render();
 </script>
 </body>
 </html>
