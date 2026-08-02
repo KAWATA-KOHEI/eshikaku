@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E資格 単語帳</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Sans','Yu Gothic UI',sans-serif;background:#f0f0f0;color:#1a1a1a;min-height:100vh}
+.wrap{max-width:680px;margin:0 auto;padding:12px 12px 48px}
+h1{font-size:19px;font-weight:600;margin-bottom:2px}
+.sub{font-size:12px;color:#666;margin-bottom:14px}
+
+/* Stats row */
+.srow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.sitem{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:7px 14px;font-size:12px;color:#555;flex:1;min-width:80px;text-align:center}
+.sitem strong{display:block;font-size:18px;font-weight:600;color:#5856d6;margin-bottom:1px}
+.sitem strong.ok{color:#34c759}.sitem strong.ng{color:#ff3b30}
+
+/* Progress */
+.pbar-wrap{margin-bottom:14px}
+.pbar-lbl{font-size:12px;color:#555;display:flex;justify-content:space-between;margin-bottom:4px}
+.pbar{background:#ddd;border-radius:999px;height:5px}
+.pbf{height:100%;background:#5856d6;border-radius:999px;transition:width .3s}
+
+/* Toolbar */
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+select,input[type=number]{border:1px solid #ccc;border-radius:8px;padding:7px 10px;font-size:13px;background:#fff;outline:none;-webkit-appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px}
+input[type=number]{width:70px}
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;-webkit-tap-highlight-color:transparent}
+.bp{background:#5856d6;color:#fff}.bp:active{background:#4340c0}
+.bs{background:#e8e8e8;color:#333}.bs:active{background:#d5d5d5}
+.shuffle-on{background:#ff9500;color:#fff}
+
+/* Card */
+.card-wrap{perspective:1200px;margin-bottom:12px}
+.card{width:100%;min-height:280px;position:relative;transform-style:preserve-3d;transition:transform .5s ease;cursor:pointer}
+.card.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column}
+.card-front{background:#fff;border:2px solid #5856d6;justify-content:center;align-items:center;padding:24px;text-align:center}
+.card-back{background:#fafafa;border:1px solid #e0e0e0;transform:rotateY(180deg);overflow:hidden}
+.cat-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:#eeecff;color:#5856d6;margin-bottom:12px;display:inline-block}
+.term{font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.4;margin-bottom:8px}
+.tap-hint{font-size:11px;color:#aaa;margin-top:14px}
+
+/* Back content */
+.back-scroll{overflow-y:auto;padding:16px;flex:1}
+.back-cat{font-size:11px;color:#5856d6;font-weight:600;margin-bottom:4px}
+.back-term{font-size:16px;font-weight:700;margin-bottom:10px;color:#1a1a1a}
+.section{margin-bottom:10px}
+.section-label{font-size:10px;font-weight:600;letter-spacing:.05em;color:#aaa;text-transform:uppercase;margin-bottom:3px}
+.desc-text{font-size:14px;line-height:1.7;color:#333}
+.formula-box{background:#f0f0ff;border-left:3px solid #5856d6;border-radius:0 8px 8px 0;padding:10px 12px;font-size:13px;font-family:'Hiragino Sans','Yu Gothic UI',monospace;line-height:1.6;color:#2a2a6a;margin:2px 0}
+.exam-box{background:#fff8e6;border-left:3px solid #ff9500;border-radius:0 8px 8px 0;padding:10px 12px;font-size:13px;line-height:1.6;color:#7a4a00}
+.ref-link{font-size:12px;color:#aaa;margin-top:8px;text-align:right}
+.ref-link a{color:#5856d6;text-decoration:none}
+
+/* Rating */
+.rating-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #efefef;background:#fafafa}
+.rating-row .btn{flex:1;font-size:13px;padding:10px 8px}
+.btn-ng{background:#fef2f2;border:1px solid #fca5a5;color:#c0392b}
+.btn-ng:active{background:#fee2e2}
+.btn-ok{background:#f0fdf4;border:1px solid #86efac;color:#166534}
+.btn-ok:active{background:#dcfce7}
+.btn-easy{background:#f0f0ff;border:1px solid #c4b5fd;color:#4338ca}
+.btn-easy:active{background:#e0e7ff}
+
+/* Nav */
+.nav{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:4px}
+.nc{font-size:13px;color:#888;min-width:60px;text-align:center}
+.nav .btn{flex:1;text-align:center}
+
+/* Ref image modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+.modal-box{background:#fff;border-radius:12px;max-width:680px;width:100%;overflow:hidden}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #efefef;font-size:14px;font-weight:600}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#888;padding:0 4px}
+.modal-img{width:100%;display:block}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>E資格 単語帳</h1>
+  <p class="sub">全74枚 ── カードをタップして裏面へ。自己評価で絞り込み可能。</p>
+
+  <div class="srow">
+    <div class="sitem"><strong id="s-total">74</strong>総枚数</div>
+    <div class="sitem"><strong class="ok" id="s-ok">0</strong>覚えた</div>
+    <div class="sitem"><strong class="ng" id="s-ng">0</strong>要復習</div>
+    <div class="sitem"><strong id="s-left">74</strong>未評価</div>
+  </div>
+
+  <div class="pbar-wrap">
+    <div class="pbar-lbl"><span id="p-lbl">0 / 74 評価済み</span><span id="p-pct">0%</span></div>
+    <div class="pbar"><div class="pbf" id="p-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="toolbar">
+    <select id="cat-filter" onchange="applyFilter()">
+      <option value="all">すべての分野</option>
+    </select>
+    <select id="status-filter" onchange="applyFilter()">
+      <option value="all">全カード</option>
+      <option value="unanswered">未評価のみ</option>
+      <option value="ng">要復習のみ</option>
+      <option value="ok">覚えたのみ</option>
+    </select>
+    <button class="btn bs" id="shuffle-btn" onclick="toggleShuffle()">シャッフル</button>
+  </div>
+
+  <div class="card-wrap" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="card-face card-front">
+        <span class="cat-badge" id="f-cat"></span>
+        <div class="term" id="f-term"></div>
+        <div class="tap-hint">タップして答えを見る</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="back-scroll" id="back-scroll">
+          <div class="back-cat" id="b-cat"></div>
+          <div class="back-term" id="b-term"></div>
+          <div class="section">
+            <div class="section-label">説明</div>
+            <div class="desc-text" id="b-desc"></div>
+          </div>
+          <div class="section" id="formula-section">
+            <div class="section-label">数式・形式</div>
+            <div class="formula-box" id="b-formula"></div>
+          </div>
+          <div class="section">
+            <div class="section-label">試験ポイント</div>
+            <div class="exam-box" id="b-exam"></div>
+          </div>
+          <div class="ref-link"><a onclick="showRef()" href="#">📄 用語集の該当ページを見る</a></div>
+        </div>
+        <div class="rating-row">
+          <button class="btn btn-ng" onclick="rate('ng');event.stopPropagation()">❌ 要復習</button>
+          <button class="btn btn-ok" onclick="rate('ok');event.stopPropagation()">✅ 覚えた</button>
+          <button class="btn btn-easy" onclick="rate('easy');event.stopPropagation()">⭐ 完璧</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="btn bs" onclick="nav(-1)">← 前</button>
+    <span class="nc" id="nc"></span>
+    <button class="btn bs" onclick="nav(1)">次 →</button>
+  </div>
+</div>
+
+<!-- Ref image modal -->
+<div class="modal-bg hidden" id="modal" onclick="closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span id="modal-title">用語集参照</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <img class="modal-img" id="modal-img" src="" alt="">
+  </div>
+</div>
+
+<script>
+const CARDS = [{"id": 1, "cat": "応用数学", "term": "ベルヌーイ分布", "desc": "二値（0か1）の確率変数の分布。2クラス分類のシグモイド出力に使う。", "formula": "P(x) = μˣ(1−μ)^(1−x)", "exam": "【試験ポイント】シグモイド関数と対になる。μが1になる確率、1−μが0になる確率。", "page": 4}, {"id": 2, "cat": "応用数学", "term": "マルチヌーイ分布（カテゴリカル分布）", "desc": "多値の確率変数の分布。多クラス分類のソフトマックス出力に使う。ベルヌーイ分布の多値版。", "formula": "（連続積の一般化）", "exam": "【試験ポイント】二値→ベルヌーイ、多値→マルチヌーイ。ソフトマックスと対になる。", "page": 4}, {"id": 3, "cat": "応用数学", "term": "ガウス分布（正規分布）", "desc": "連続値の分布。回帰問題の線形出力ユニットで使う。μ=平均、σ²=分散。", "formula": "N(x; μ, σ²) = 1/√(2πσ²) · exp(−(x−μ)²/2σ²)", "exam": "【試験ポイント】回帰→ガウス分布、分類→ベルヌーイ/マルチヌーイ の対応を押さえる。", "page": 4}, {"id": 4, "cat": "応用数学", "term": "ベイズ則", "desc": "条件付き確率。事前確率P(B)と尤度P(A|B)から事後確率P(B|A)を求める。", "formula": "P(B|A) = P(A|B)P(B) / P(A)", "exam": "【試験ポイント】分子はP(A|B)×P(B)、分母はP(A)（全確率）。迷惑メール問題などで頻出。", "page": 4}, {"id": 5, "cat": "応用数学", "term": "シャノンエントロピー", "desc": "確率分布全体の不確実性を表す指標。確率が低いほど情報量が多い。", "formula": "H(x) = −Σ P(xᵢ) log P(xᵢ)", "exam": "【試験ポイント】マイナスlogP。均等分布のとき最大、確定事象のとき0。", "page": 4}, {"id": 6, "cat": "応用数学", "term": "KLダイバージェンス", "desc": "2つの確率分布P,Qの差異を測る。P=Qのとき最小値0。非対称（D_KL(P‖Q) ≠ D_KL(Q‖P)）。", "formula": "D_KL(P‖Q) = Σ P(x) log(P(x)/Q(x))", "exam": "【試験ポイント】非負で、P=Qのとき0。非対称性は頻出。VAEの正則化項に登場。", "page": 4}, {"id": 7, "cat": "応用数学", "term": "交差エントロピー誤差", "desc": "真の分布pとモデル分布qの間のエントロピー。分類の損失関数として使う。", "formula": "H(p,q) = −Σ p(x) log q(x)", "exam": "【試験ポイント】KLダイバージェンス + エントロピー = 交差エントロピー。logの中はモデル出力q。", "page": 4}, {"id": 8, "cat": "応用数学", "term": "分散", "desc": "データの散らばりを表す。期待値からの二乗誤差の期待値。", "formula": "Var(X) = E[X²] − (E[X])²", "exam": "【試験ポイント】E[X²] − (E[X])² の展開式は超頻出。標準偏差は√Var(X)。", "page": 4}, {"id": 9, "cat": "機械学習", "term": "ロジスティック回帰", "desc": "シグモイド関数で0〜1に変換し、確率としてクラス分類するモデル。", "formula": "y = σ(wx+b) = 1/(1+e^{−z})", "exam": "【試験ポイント】活性化関数=シグモイド。出力=確率。2クラス分類に使う。", "page": 5}, {"id": 10, "cat": "機械学習", "term": "SVM", "desc": "カーネル関数＋マージン最大化で非線形分離を実現。汎化性能が高い。", "formula": "マージン = 2/‖w‖ を最大化", "exam": "【試験ポイント】カーネルトリック=高次元写像を内積で代替。マージン最大化=境界線と最近傍点の距離を最大に。", "page": 5}, {"id": 11, "cat": "機械学習", "term": "k近傍法（kNN）", "desc": "学習データをベクトル空間にプロットし、距離が近いK個の多数決でクラスを推定。パラメータを学習しない。", "formula": "距離: ユークリッド距離など", "exam": "【試験ポイント】モデルのパラメータを学習しない点が他と異なる。kが大きいほど境界が滑らか。", "page": 5}, {"id": 12, "cat": "機械学習", "term": "主成分分析（PCA）", "desc": "相関のある変数から、分散を最大に保つ主成分を合成する次元削減手法。", "formula": "分散共分散行列の固有ベクトルを計算", "exam": "【試験ポイント】「分散最大の方向」が第1主成分。教師なし。LDA（クラス間分散最大）と混同しない。", "page": 5}, {"id": 13, "cat": "機械学習", "term": "K-Means", "desc": "距離の近いデータを同じクラスタに分ける教師なし手法。重心を繰り返し更新。", "formula": "各点を最近傍の重心に割り当て → 重心を再計算 → 収束まで繰り返す", "exam": "【試験ポイント】教師なし・クラスタリング。Kは事前に決める必要がある。", "page": 5}, {"id": 14, "cat": "機械学習", "term": "グリッドサーチ", "desc": "ハイパーパラメータの全組み合わせを試す手法。計算コストが指数関数的に増加。", "formula": "探索数 = Π |パラメータ候補数|", "exam": "【試験ポイント】並列化しやすいが計算量大。ランダムサーチより劣ることが多い。", "page": 6}, {"id": 15, "cat": "機械学習", "term": "ランダムサーチ", "desc": "指定した分布からランダムにハイパーパラメータを選ぶ手法。一般にグリッドサーチより良い結果。", "formula": "各パラメータを確率分布からサンプリング", "exam": "【試験ポイント】「一般にグリッドサーチより良い結果」が頻出表現。局所・大域解を見つける力は弱い。", "page": 6}, {"id": 16, "cat": "機械学習", "term": "早期終了（Early Stopping）", "desc": "検証データの誤差が増加し始めた時点で学習を停止。過学習を防ぐ正則化手法。", "formula": "val_loss が上昇したら停止", "exam": "【試験ポイント】訓練誤差は下がっても検証誤差が上がり始めたタイミングで止める。", "page": 6}, {"id": 17, "cat": "機械学習", "term": "精度(Accuracy)", "desc": "全サンプル中の正解数の割合。クラス不均衡データでは信頼性が低い。", "formula": "(TP+TN) / (TP+TN+FP+FN)", "exam": "【試験ポイント】偏ったデータでは不適切。F値や適合率・再現率を使うべき場面を区別する。", "page": 6}, {"id": 18, "cat": "機械学習", "term": "適合率（Precision）", "desc": "陽性と予測した中で実際に陽性の割合。偽陽性を減らしたいとき重視。", "formula": "TP / (TP+FP)", "exam": "【試験ポイント】分母はTP+FP（陽性予測数）。スパムフィルタなど誤検知を嫌う場面。", "page": 6}, {"id": 19, "cat": "機械学習", "term": "再現率（Recall）", "desc": "実際の陽性の中で陽性と予測できた割合。見逃しを減らしたいとき重視。", "formula": "TP / (TP+FN)", "exam": "【試験ポイント】分母はTP+FN（実際の陽性数）。がん検診など見逃しNGの場面。", "page": 6}, {"id": 20, "cat": "機械学習", "term": "F値（F-Score）", "desc": "適合率と再現率の調和平均。精度より良い評価指標。", "formula": "F = 2×Precision×Recall / (Precision+Recall)", "exam": "【試験ポイント】算術平均ではなく調和平均。どちらかが0なら0になる性質を押さえる。", "page": 6}, {"id": 21, "cat": "機械学習", "term": "アンサンブル学習", "desc": "複数の弱学習器を組み合わせ高精度を実現。バギング・ブースティング・スタッキングがある。", "formula": "予測 = 多数決 or 加重平均", "exam": "【試験ポイント】バギング=並列(分散低減)、ブースティング=直列(バイアス低減)、の違い頻出。", "page": 6}, {"id": 22, "cat": "機械学習", "term": "バイアスとバリアンス", "desc": "バイアス=予測値と真値の誤差の平均。バリアンス=予測値の散らばり。", "formula": "期待誤差 = Bias² + Variance + ノイズ", "exam": "【試験ポイント】過学習=高バリアンス、未学習=高バイアス。トレードオフ関係。", "page": 6}, {"id": 23, "cat": "NN基礎", "term": "誤差逆伝播（バックプロパゲーション）", "desc": "出力層から入力層に向けて勾配を連鎖律で伝播させ、各重みの勾配を計算する手法。", "formula": "∂z/∂w = ∂z/∂y · ∂y/∂x · ∂x/∂w（連鎖律）", "exam": "【試験ポイント】∂z/∂w = (∂z/∂y)(∂y/∂x)(∂x/∂w)。掛け算で伝わる。浅い層ほど勾配消失しやすい。", "page": 7}, {"id": 24, "cat": "NN基礎", "term": "ステップ関数", "desc": "閾値で0/1を切り替える活性化関数。単純パーセプトロンで使用。微分がほぼ0のため学習に不向き。", "formula": "f(u) = 1 if u≥0, 0 if u<0", "exam": "【試験ポイント】勾配がほぼ0なのでバックプロパゲーションに使えない。歴史的な関数。", "page": 8}, {"id": 25, "cat": "NN基礎", "term": "シグモイド関数", "desc": "出力を0〜1に変換。2値分類の出力層に使う。微分が y(1−y) で表せる。", "formula": "σ(x) = 1/(1+e^{−x})、微分: σ(x)(1−σ(x))", "exam": "【試験ポイント】微分の最大値は0.25（x=0のとき）。深い層では勾配消失の原因になる。", "page": 8}, {"id": 26, "cat": "NN基礎", "term": "tanh（ハイパボリックタンジェント）", "desc": "出力−1〜1。シグモイドより勾配が大きく学習しやすい。微分は 1−tanh²(x)。", "formula": "tanh(x) = (eˣ−e^{−x})/(eˣ+e^{−x})、微分: 1−tanh²(x)", "exam": "【試験ポイント】微分最大値は1（x=0）。シグモイドより勾配消失しにくい。RNNでよく使う。", "page": 8}, {"id": 27, "cat": "NN基礎", "term": "ReLU", "desc": "0以下を0、正はそのまま通す。勾配消失が起きにくく最もよく使われる活性化関数。", "formula": "f(x) = max(0, x)、微分: 1 if x>0, 0 if x≤0", "exam": "【試験ポイント】Dying ReLU問題（x<0の勾配が常に0）。Leaky ReLUはこれを改善。", "page": 8}, {"id": 28, "cat": "NN基礎", "term": "ソフトマックス関数", "desc": "多クラス分類の出力層。全出力の合計が1になり、確率として解釈できる。", "formula": "softmax(xᵢ) = eˣⁱ / Σeˣʲ", "exam": "【試験ポイント】出力の和=1。温度パラメータT→∞で一様分布、T→0でone-hot。", "page": 8}, {"id": 29, "cat": "NN基礎", "term": "二値クロスエントロピー誤差", "desc": "2クラス分類のコスト関数。シグモイド出力と組み合わせる。", "formula": "L = −t·log(y) − (1−t)·log(1−y)  ∂L/∂y = −t/y + (1−t)/(1−y)", "exam": "【試験ポイント】微分形 ∂L/∂y が頻出。t=1なら−1/y、t=0なら+1/(1−y)。", "page": 9}, {"id": 30, "cat": "NN基礎", "term": "クロスエントロピー誤差（多クラス）", "desc": "多クラス分類のコスト関数。ソフトマックス出力と組み合わせる。", "formula": "L = −Σ tᵢ·log(yᵢ)", "exam": "【試験ポイント】one-hotラベルなら正解クラスのlog(yᵢ)だけが残る。数値安定のためdelta=1e-7を加える。", "page": 9}, {"id": 31, "cat": "最適化", "term": "SGD（確率的勾配降下法）", "desc": "1サンプルごとに重みを更新。通常のGDより計算が速い。局所解に陥りやすい。", "formula": "W ← W − α·∇E(W)", "exam": "【試験ポイント】αは学習率。大きすぎると発散、小さすぎると収束遅延。", "page": 10}, {"id": 32, "cat": "最適化", "term": "モメンタム", "desc": "過去の勾配方向を速度として蓄積し慣性をつける。局所解脱出に効果的。", "formula": "v ← βv − α·∇E(W)、W ← W + v", "exam": "【試験ポイント】β（慣性係数）は通常0.9程度。速度が蓄積されるので振動が抑制される。", "page": 10}, {"id": 33, "cat": "最適化", "term": "AdaGrad", "desc": "パラメータごとに適応的な学習率。過去の勾配の二乗和で除算。更新が進むと学習率が下がりすぎる欠点。", "formula": "h ← h + (∇E)²、W ← W − α/√h · ∇E", "exam": "【試験ポイント】hが累積されると学習率が0に近づく（飽和問題）。RMSPropが改善。", "page": 10}, {"id": 34, "cat": "最適化", "term": "RMSProp", "desc": "AdaGradの飽和問題を指数移動平均で解決。過去の勾配を割引いて蓄積。", "formula": "h ← ρh + (1−ρ)(∇E)²、W ← W − α/√h · ∇E", "exam": "【試験ポイント】AdaGradとの違いは「指数移動平均」でhを計算する点。ρが減衰率。", "page": 10}, {"id": 35, "cat": "最適化", "term": "Adam", "desc": "モメンタム（1次モーメント）＋RMSProp（2次モーメント）の組み合わせ。バイアス補正あり。", "formula": "m ← β₁m+(1−β₁)g、v ← β₂v+(1−β₂)g²、W ← W − α·m̂/√v̂", "exam": "【試験ポイント】β₁≈0.9（1次）、β₂≈0.999（2次）、ε=1e-8。現在最も広く使われる手法。", "page": 10}, {"id": 36, "cat": "最適化", "term": "ネステロフのモメンタム（NAG）", "desc": "モメンタムの拡張。未来の位置で勾配を計算することで、より正確な更新を行う。", "formula": "W_look = W + βv、v ← βv − α·∇E(W_look)", "exam": "【試験ポイント】「未来の勾配を使う」がキーワード。モメンタムより収束が速い場合がある。", "page": 10}, {"id": 37, "cat": "正則化", "term": "ドロップアウト", "desc": "学習時にランダムにノードを無効化し、過学習を防ぐ。一般的に50%無効化が良いとされる。", "formula": "テスト時は全ノードを使い、重みをp倍してスケーリング", "exam": "【試験ポイント】CNN全結合層に使うことが多い。テスト時はドロップしない（重みをスケール調整）。", "page": 11}, {"id": 38, "cat": "正則化", "term": "スパース表現", "desc": "行列・ベクトルの要素の多くをゼロにする。学習が効率的になる。", "formula": "‖w‖₁（L1正則化がスパース化を促す）", "exam": "【試験ポイント】L1正則化→スパース（一部が厳密に0）、L2正則化→重みが全体的に小さい。", "page": 11}, {"id": 39, "cat": "正則化", "term": "ラベル平滑化", "desc": "ソフトマックスの正則化。正解ラベルを1→(1−ε)、不正解を0→ε/(k−1)に変える。過信を防ぐ。", "formula": "y_smooth = (1−ε)·y_onehot + ε/k", "exam": "【試験ポイント】目的関数が0/1だと重みが大きくなりすぎる問題を解決。局所解回避にもなる。", "page": 11}, {"id": 40, "cat": "転移学習", "term": "ファインチューニング", "desc": "学習済みモデルの一部の重みだけを再学習させる転移学習の手法。", "formula": "（事前学習済み重みを初期値として使用）", "exam": "【試験ポイント】全層ではなく一部のみ再学習。データ量が少ない場合に有効。ドメイン適応と区別する。", "page": 12}, {"id": 41, "cat": "転移学習", "term": "ワンショット学習", "desc": "各カテゴリ1枚だけのラベル付きデータで学習する。特徴空間上の近傍で推論する。", "formula": "（距離学習・メタ学習で実現）", "exam": "【試験ポイント】1枚→ワンショット、0枚→ゼロショット。Few-shotはN枚（少数）。", "page": 12}, {"id": 42, "cat": "転移学習", "term": "ゼロショット学習", "desc": "ラベル付きデータを一枚も使わず、特徴量の類似度で分類する。", "formula": "（属性ベクトルや意味空間を使って推論）", "exam": "【試験ポイント】物体認識ではなく特徴認識が鍵。テキスト記述を使って未見クラスを分類する手法が多い。", "page": 12}, {"id": 43, "cat": "NN基礎", "term": "バッチ正規化（Batch Normalization）", "desc": "ミニバッチ内で各特徴量をゼロ平均・単位分散に正規化。γ,βで再スケーリング。", "formula": "x̂ = (x−μ_B)/√(σ_B²+ε)、y = γx̂+β", "exam": "【試験ポイント】ミニバッチ次元で正規化（Layer Normalizationはサンプル次元）。内部共変量シフトを低減。", "page": 7}, {"id": 44, "cat": "CNN", "term": "畳み込み（Convolution）", "desc": "フィルター（カーネル）で画像の特徴を抽出する処理。ストライド・パディングで出力サイズが変わる。", "formula": "出力サイズ = (入力サイズ − カーネルサイズ + 2×パディング) / ストライド + 1", "exam": "【試験ポイント】出力サイズの計算式は頻出。パディングを増やすと出力が大きくなる。", "page": 13}, {"id": 45, "cat": "CNN", "term": "プーリング（Pooling）", "desc": "特徴マップを縮小し、位置不変性を与える。MaxプーリングとAvgプーリングがある。", "formula": "Max: 領域内の最大値、Avg: 領域内の平均値", "exam": "【試験ポイント】Maxプーリングの方が一般的。学習パラメータがない。", "page": 13}, {"id": 46, "cat": "画像認識", "term": "AlexNet", "desc": "2012年ILSVRC優勝。畳み込み5層+全結合3層。ReLU・Dropout・データ拡張を導入。", "formula": "（8層構成）", "exam": "【試験ポイント】深層学習ブームの火付け役。ReLU・Dropout・データ拡張の3点が改善ポイント。", "page": 14}, {"id": 47, "cat": "画像認識", "term": "VGG", "desc": "2014年ILSVRC2位。16層(VGG16)または19層(VGG19)。3×3畳み込みを多用。", "formula": "3×3フィルターのみ使用", "exam": "【試験ポイント】3×3を重ねることで5×5と同じ受容野を少ないパラメータで実現。全結合層が重い。", "page": 14}, {"id": 48, "cat": "画像認識", "term": "GoogleNet（Inception）", "desc": "2014年ILSVRC優勝。22層。Inceptionモジュール（複数サイズの畳み込みを並列）・GAP・Auxiliary Lossが特徴。", "formula": "Inception module: 1×1, 3×3, 5×5, MaxPoolを並列", "exam": "【試験ポイント】GAP（Global Average Pooling）でパラメータ削減。Auxiliary Lossで勾配消失対策。", "page": 14}, {"id": 49, "cat": "画像認識", "term": "ResNet", "desc": "残差接続（スキップ接続）で非常に深いネットワークを学習可能にした。勾配消失問題を解決。", "formula": "出力 = F(x) + x（残差ブロック）", "exam": "【試験ポイント】スキップ接続でxを足すことで勾配が直接伝わる。層数を1000以上にできる。", "page": 14}, {"id": 50, "cat": "画像認識", "term": "Faster R-CNN", "desc": "RPN（領域提案ネットワーク）を使いEnd-to-Endで学習できる物体検出アーキテクチャ。", "formula": "RPNの出力をFast R-CNNに渡す", "exam": "【試験ポイント】RPNで候補領域を生成→畳み込み層を共有。R-CNN系の最終形。", "page": 16}, {"id": 51, "cat": "画像認識", "term": "YOLO", "desc": "画像全体をグリッド分割し、分類と位置推定を同時に行うリアルタイム物体検出モデル。", "formula": "各グリッドセルがBBと確率を直接出力", "exam": "【試験ポイント】リアルタイム処理が特徴。Faster R-CNNより速いが精度は劣る場合もある。", "page": 16}, {"id": 52, "cat": "画像認識", "term": "FCN（Fully Convolutional Network）", "desc": "全結合層を畳み込みに置換し、任意サイズの入力でセマンティックセグメンテーションを実現。", "formula": "逆畳み込み(Deconvolution)でアップサンプリング", "exam": "【試験ポイント】全結合層をなくしたことで空間情報を保持。アップサンプリングに逆畳み込みを使う。", "page": 17}, {"id": 53, "cat": "RNN", "term": "LSTM", "desc": "長期依存性を学習するためのRNNの拡張。入力・忘却・出力の3つのゲートとセル状態を持つ。", "formula": "f_t=σ(W_f·[h_{t-1},x_t]+b_f)など", "exam": "【試験ポイント】忘却ゲート（forget gate）が長期記憶を制御。勾配消失問題をゲート機構で解決。", "page": 18}, {"id": 54, "cat": "RNN", "term": "勾配クリッピング", "desc": "勾配爆発を防ぐため、勾配の値を閾値で切り詰める手法。要素ごとまたはL2ノルムで行う。", "formula": "ノルム: g ← (v/‖g‖)·g (‖g‖>vのとき)", "exam": "【試験ポイント】要素ごと=各成分を閾値±vに収める、ノルム=全重みを一律スケールダウン。", "page": 19}, {"id": 55, "cat": "RNN", "term": "BPTT（時間方向の誤差逆伝播）", "desc": "RNNの勾配計算を時間軸方向に展開して行う手法。長い系列では勾配消失・爆発が起きやすい。", "formula": "∂L/∂W = Σ_t ∂L_t/∂W", "exam": "【試験ポイント】系列が長いほど勾配が消失or爆発。Truncated BPTTで系列を分割して対処。", "page": 18}, {"id": 56, "cat": "NLP", "term": "形態素解析", "desc": "文章を意味を持つ最小単位（形態素）に分解する処理。日本語NLPの前処理として必須。", "formula": "「深層学習を勉強する」→「深層学習/を/勉強/する」", "exam": "【試験ポイント】日本語は単語間にスペースがないため必須。MeCab・Janomeなどが使われる。", "page": 19}, {"id": 57, "cat": "NLP", "term": "Word2Vec", "desc": "単語を密なベクトルで表現する手法。類似する単語は近いベクトルになる。CBOW/Skip-gramの2種。", "formula": "CBOW: 周辺語→中心語予測、Skip-gram: 中心語→周辺語予測", "exam": "【試験ポイント】「king − man + woman ≈ queen」という演算が有名。次元削減にSVDも使われる。", "page": 19}, {"id": 58, "cat": "強化学習", "term": "Q学習", "desc": "状態と行動の価値関数Q(s,a)を学習し、最適行動を求める価値関数ベースの強化学習。", "formula": "Q(s,a) ← Q(s,a) + α[r + γ·max Q(s',a') − Q(s,a)]", "exam": "【試験ポイント】オフ方策（異なる方策でデータを取れる）。DQNはQ学習にDNNを使った手法。", "page": 20}, {"id": 59, "cat": "強化学習", "term": "DQN", "desc": "Q学習にDeep Neural Networkを組み合わせた手法。Experience ReplayとTarget Networkが鍵。", "formula": "（Q-networkでQ関数を近似）", "exam": "【試験ポイント】Experience Replay=経験をランダムにミニバッチ学習、Target Network=更新を遅らせた安定化用ネット。", "page": 21}, {"id": 60, "cat": "強化学習", "term": "方策勾配法", "desc": "行動方策π(s,a)を直接最適化する強化学習手法。REINFORCEやActor-Criticが代表的。", "formula": "∇J(θ) = E[∇log π(a|s;θ) · G_t]", "exam": "【試験ポイント】連続行動空間を扱える。高バリアンスが課題→ベースラインや Actor-Critic で改善。", "page": 21}, {"id": 61, "cat": "強化学習", "term": "報酬のクリッピング", "desc": "DQNの工夫。報酬を−1/0/+1に固定し、学習を安定化させる。タスク変化にも対応しやすい。", "formula": "reward = sign(r) = {-1, 0, +1}", "exam": "【試験ポイント】報酬の大小の情報は失われるが、学習が安定する。異なるゲームへの転用が容易に。", "page": 21}, {"id": 62, "cat": "GNN", "term": "GNN（グラフニューラルネットワーク）", "desc": "グラフ構造データ（ノード＋エッジ）を入力とするNNの総称。SNS分析・分子設計などに使われる。", "formula": "（ノードの特徴量を隣接ノードと集約して更新）", "exam": "【試験ポイント】グラフ構造→GNN、グリッド構造→CNN、系列構造→RNNのように構造と手法を対応させる。", "page": 22}, {"id": 63, "cat": "GNN", "term": "GCN（グラフ畳み込みネットワーク）", "desc": "グラフ構造に畳み込みを適用。基本的な考え方はCNNと同様。隣接ノードの情報を集約して畳み込む。", "formula": "H^{(l+1)} = σ(D̃^{-1/2}ÃD̃^{-1/2}H^{(l)}W^{(l)})", "exam": "【試験ポイント】Ã=隣接行列+単位行列（自己ループを含む）。D̃は次数行列。", "page": 22}, {"id": 64, "cat": "距離学習", "term": "SiameseNet", "desc": "2枚の画像を同一ネットワークに入力し、特徴量間の距離を損失として学習する手法。", "formula": "L = (1−Y)·½D² + Y·½max(0, m−D)²", "exam": "【試験ポイント】Y=0が類似ペア（距離を縮める）、Y=1が異なるペア（距離をマージンm以上に広げる）。", "page": 22}, {"id": 65, "cat": "距離学習", "term": "TripletLoss", "desc": "Anchor・Positive・Negativeの3枚でAnchorrとPositiveを近づけ、Negativeを遠ざける学習。", "formula": "L = max(0, d(a,p) − d(a,n) + margin)", "exam": "【試験ポイント】3枚1セットでラベル付けするためミスが少ない。マージンで距離の差を保証する。", "page": 22}, {"id": 66, "cat": "XAI", "term": "CAM（Class Activation Map）", "desc": "GAP（Global Average Pooling）を使うCNNに適用できる可視化手法。注視領域をヒートマップ表示。", "formula": "CAM = Σ_k w_k^c · f_k(x,y)", "exam": "【試験ポイント】GAPを使うモデル限定（ResNetなど）。全結合層を持つモデルには直接使えない。", "page": 23}, {"id": 67, "cat": "XAI", "term": "Grad-CAM", "desc": "CNNの最終畳み込み層の出力値に対する勾配を利用した可視化手法。CAMより汎用的。", "formula": "Lᶜ_Grad-CAM = ReLU(Σ_k α_k^c · A^k)", "exam": "【試験ポイント】アーキテクチャ変更不要。VGG・マルチモーダル・強化学習CNNにも適用可能。", "page": 23}, {"id": 68, "cat": "XAI", "term": "LIME", "desc": "局所的な単純分類器でモデルの予測を近似し、重要な特徴量を示す説明手法。モデル非依存。", "formula": "ξ(x) = argmin_{g∈G} L(f, g, π_x) + Ω(g)", "exam": "【試験ポイント】局所的な説明のみ（全体的な傾向は示せない）。SHAPが全体的な説明を補完。", "page": 23}, {"id": 69, "cat": "XAI", "term": "SHAP", "desc": "シャープレイ値を使い、各特徴量が予測結果にどれだけ寄与したかを示す。全体的な説明が可能。", "formula": "φ_i = Σ_{S⊆F\\{i}} |S|!(|F|−|S|−1)!/|F|! · [f(S∪{i})−f(S)]", "exam": "【試験ポイント】LIMEは局所的、SHAPは全体的。特徴量の増減が予測に与える影響を可視化。", "page": 23}, {"id": 70, "cat": "Transformer", "term": "セルフアテンション", "desc": "系列内の各トークンが他の全トークンとの関連度（スコア）を計算し、重み付き集約する機構。", "formula": "Attention(Q,K,V) = softmax(QKᵀ/√dk)·V", "exam": "【試験ポイント】√dkで除算する理由=内積が大きくなりsoftmaxの勾配が消失するのを防ぐため。", "page": 7}, {"id": 71, "cat": "Transformer", "term": "BERT", "desc": "Transformerのエンコーダを使った事前学習モデル。MLM（マスク言語モデル）とNSP（次文予測）で学習。", "formula": "埋め込み = トークン埋め込み + セグメント埋め込み + 位置埋め込み", "exam": "【試験ポイント】双方向（左右のコンテキストを同時に参照）。GPTは一方向。Fine-Tuningで下流タスクへ適用。", "page": 7}, {"id": 72, "cat": "Transformer", "term": "GPT", "desc": "Transformerのデコーダを使った自己回帰型言語モデル。教師なし事前学習＋Scaling Lawが特徴。", "formula": "P(x_t | x_1,...,x_{t-1})（左から右への生成）", "exam": "【試験ポイント】一方向（左→右）。GPT-2=40GB、GPT-3=45TB。Scaling Lawの検証が開発背景。", "page": 7}, {"id": 73, "cat": "画像生成", "term": "GAN（敵対的生成ネットワーク）", "desc": "GeneratorとDiscriminatorが競い合いながら学習する生成モデル。高品質画像を生成できる。", "formula": "min_G max_D E[logD(x)] + E[log(1−D(G(z)))]", "exam": "【試験ポイント】GeneratorはDiscriminatorを騙す、DiscriminatorはGeneratorを見破る。モード崩壊が課題。", "page": 7}, {"id": 74, "cat": "画像生成", "term": "VAE（変分オートエンコーダー）", "desc": "潜在変数を確率分布（ガウス分布）としてエンコードし、そこからデコードして生成する生成モデル。", "formula": "L = 再構成誤差 + D_KL(q(z|x) ‖ p(z))", "exam": "【試験ポイント】正則化項がKLダイバージェンス。潜在空間が連続的で補間可能。GANより画像がぼやける傾向。", "page": 7}];
+const GIMG = 'gimg/';
+
+const ratings = {}; // id -> 'ok'|'ng'|'easy'
+let fi = CARDS.map((_,i)=>i);
+let pos = 0;
+let shuffleOn = false;
+let isFlipped = false;
+
+// Build category filter options
+const cats = [...new Set(CARDS.map(c=>c.cat))];
+const catSel = document.getElementById('cat-filter');
+cats.forEach(c=>{
+  const o=document.createElement('option');
+  o.value=c; o.textContent=c; catSel.appendChild(o);
+});
+
+function cq(){ return CARDS[fi[pos]]; }
+
+function render(){
+  const q = cq();
+  // front
+  document.getElementById('f-cat').textContent = q.cat;
+  document.getElementById('f-term').textContent = q.term;
+  // back
+  document.getElementById('b-cat').textContent = q.cat;
+  document.getElementById('b-term').textContent = q.term;
+  document.getElementById('b-desc').textContent = q.desc;
+  document.getElementById('b-formula').textContent = q.formula;
+  document.getElementById('b-exam').textContent = q.exam;
+  const fs = document.getElementById('formula-section');
+  fs.style.display = (q.formula && q.formula !== '（なし）') ? '' : 'none';
+  // reset flip
+  isFlipped = false;
+  document.getElementById('card').classList.remove('flipped');
+  document.getElementById('back-scroll').scrollTop = 0;
+  // nav
+  document.getElementById('nc').textContent = (pos+1)+' / '+fi.length;
+  updateStats();
+}
+
+function flipCard(){
+  isFlipped = !isFlipped;
+  document.getElementById('card').classList.toggle('flipped', isFlipped);
+}
+
+function rate(r){
+  const q = cq();
+  ratings[q.id] = r;
+  updateStats();
+  // auto-advance
+  if(pos < fi.length-1){ pos++; render(); }
+  else { render(); }
+}
+
+function nav(d){
+  pos = Math.max(0, Math.min(fi.length-1, pos+d));
+  render();
+}
+
+function toggleShuffle(){
+  shuffleOn = !shuffleOn;
+  const btn = document.getElementById('shuffle-btn');
+  btn.textContent = shuffleOn ? 'シャッフル中' : 'シャッフル';
+  btn.className = shuffleOn ? 'btn shuffle-on' : 'btn bs';
+  applyFilter();
+}
+
+function applyFilter(){
+  const cat = document.getElementById('cat-filter').value;
+  const status = document.getElementById('status-filter').value;
+  fi = CARDS.map((_,i)=>i).filter(i=>{
+    const c = CARDS[i];
+    if(cat!=='all' && c.cat!==cat) return false;
+    if(status==='unanswered' && ratings[c.id]!==undefined) return false;
+    if(status==='ng' && ratings[c.id]!=='ng') return false;
+    if(status==='ok' && !['ok','easy'].includes(ratings[c.id])) return false;
+    return true;
+  });
+  if(shuffleOn){ fi.sort(()=>Math.random()-.5); }
+  pos=0;
+  if(fi.length===0){ alert('該当カードがありません'); document.getElementById('status-filter').value='all'; applyFilter(); return; }
+  render();
+}
+
+function updateStats(){
+  const total=CARDS.length;
+  const ok=Object.values(ratings).filter(v=>v==='ok'||v==='easy').length;
+  const ng=Object.values(ratings).filter(v=>v==='ng').length;
+  const rated=Object.keys(ratings).length;
+  document.getElementById('s-ok').textContent=ok;
+  document.getElementById('s-ng').textContent=ng;
+  document.getElementById('s-left').textContent=total-rated;
+  const pct=Math.round(rated/total*100);
+  document.getElementById('p-lbl').textContent=rated+' / '+total+' 評価済み';
+  document.getElementById('p-pct').textContent=pct+'%';
+  document.getElementById('p-fill').style.width=pct+'%';
+}
+
+function showRef(){
+  const q=cq();
+  const n=String(q.page).padStart(2,'0');
+  document.getElementById('modal-img').src=GIMG+'g'+n+'.jpg';
+  document.getElementById('modal-title').textContent='用語集 p.'+q.page+' ｜'+q.term;
+  document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal(){
+  document.getElementById('modal').classList.add('hidden');
+}
+
+// keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') nav(1);
+  else if(e.key==='ArrowLeft') nav(-1);
+  else if(e.key===' '){ e.preventDefault(); flipCard(); }
+  else if(e.key==='1') rate('ng');
+  else if(e.key==='2') rate('ok');
+  else if(e.key==='3') rate('easy');
+});
+
+render();
+</script>
+</body>
+</html>
