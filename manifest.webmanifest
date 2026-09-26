@@ -1,0 +1,19 @@
+{
+  "name": "E資格 ドリル",
+  "short_name": "E資格",
+  "description": "E資格の問題演習と単語帳。毎日決まった時刻に通知でお知らせします。",
+  "lang": "ja",
+  "start_url": "./drill.html?daily=1",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f0f0f0",
+  "theme_color": "#5856d6",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "今日の問題", "url": "./drill.html?daily=1" },
+    { "name": "単語帳", "url": "./cards.html" }
+  ]
+}

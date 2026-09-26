@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>E資格 ドリル問題集</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#5856d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="E資格">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="push.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Hiragino Sans','Yu Gothic UI',sans-serif;background:#f0f0f0;color:#1a1a1a}
@@ -90,6 +96,22 @@ select{border:1px solid #ccc;border-radius:8px;padding:6px 10px;font-size:13px;b
 .sync-badge.ok{color:#34c759}
 .sync-badge.err{color:#ff3b30}
 .hidden{display:none!important}
+
+/* Daily */
+.today{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:14px}
+.streak{font-weight:600;color:#ff9500}
+.today-cnt{color:#555}
+.today-cnt strong{color:#5856d6}
+.today.done{border-color:#86efac;background:#f0fdf4}
+.today.done .today-cnt strong{color:#34c759}
+.daily-banner{background:#5856d6;color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:14px;font-weight:500}
+.notif{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+.notif-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.notif-row .lbl{font-weight:600;flex:1;min-width:110px}
+.notif-row .btn{padding:6px 14px;font-size:13px}
+.notif-msg{font-size:12px;color:#666;margin-top:6px;line-height:1.6}
+.notif-msg:empty{display:none}
+.notif-msg.err{color:#c0392b}
 </style>
 </head>
 <body>
@@ -122,6 +144,22 @@ select{border:1px solid #ccc;border-radius:8px;padding:6px 10px;font-size:13px;b
     <div class="topbar">
       <span class="user-info" id="user-email-disp"></span>
       <button class="logout-btn" onclick="logout()">ログアウト</button>
+    </div>
+
+    <div class="daily-banner hidden" id="daily-banner"></div>
+
+    <div class="today" id="today">
+      <span class="streak" id="streak">🔥 0日連続</span>
+      <span class="today-cnt">今日 <strong id="today-n">0</strong> / <span id="today-goal"></span> 問</span>
+    </div>
+
+    <div class="notif" id="notif">
+      <div class="notif-row">
+        <span class="lbl">🔔 毎日の通知</span>
+        <select id="notif-hour"></select>
+        <button class="btn bp" id="notif-btn" onclick="toggleNotif()">ONにする</button>
+      </div>
+      <div class="notif-msg" id="notif-msg"></div>
     </div>
 
     <div class="stats">
@@ -179,9 +217,13 @@ const DATA = [{"num": 1, "answer": "D"}, {"num": 2, "answer": "B"}, {"num": 3, "
 const IMGBASE = 'img/';
 const MULTIPART = new Set([9,13,14,29,71,76]);
 
+// 1日のノルマ。supabase/functions/daily-reminder の DAILY_GOAL と揃えること
+const DAILY_GOAL = 5;
+const DAILY_MODE = new URLSearchParams(location.search).has('daily');
+
 let fi = DATA.map((_,i)=>i);
 let pos = 0;
-const ua = {}, uc = {};
+const ua = {}, uc = {}, ad = {};
 let isSignup = false;
 
 // ── Auth ──────────────────────────────────────────
@@ -235,6 +277,7 @@ async function logout() {
   await sb.auth.signOut();
   Object.keys(ua).forEach(k=>delete ua[k]);
   Object.keys(uc).forEach(k=>delete uc[k]);
+  Object.keys(ad).forEach(k=>delete ad[k]);
   document.getElementById('drill-screen').classList.add('hidden');
   document.getElementById('auth-screen').classList.remove('hidden');
 }
@@ -248,7 +291,10 @@ sb.auth.onAuthStateChange(async (event, session) => {
     await loadProgress();
     fi = DATA.map((_,i)=>i);
     pos = 0;
+    if (DAILY_MODE) startDaily();
     render();
+    updateDaily();
+    initNotif();
   }
 });
 
@@ -262,11 +308,12 @@ function setSyncBadge(state) {
 
 async function loadProgress() {
   setSyncBadge('saving');
-  const { data, error } = await sb.from('progress').select('question_num,user_answer,is_correct');
+  const { data, error } = await sb.from('progress').select('question_num,user_answer,is_correct,answered_at');
   if (error) { setSyncBadge('err'); return; }
   data.forEach(row => {
     ua[row.question_num] = row.user_answer;
     uc[row.question_num] = row.is_correct;
+    ad[row.question_num] = row.answered_at;
   });
   setSyncBadge('ok');
 }
@@ -357,12 +404,14 @@ async function check() {
     raw = sel.value.toUpperCase();
   }
   ua[q.num] = raw;
+  ad[q.num] = new Date().toISOString();
   const nu = raw.replace(/[\s\u3000:：\/]/g,'').replace(/[アイウ]/g,'');
   const nc2 = q.answer.toUpperCase().replace(/[\s\u3000:：\/]/g,'').replace(/[アイウ]/g,'');
   uc[q.num] = nu === nc2;
   renderAnsBody(q);
   showRes(q, raw);
   updateStats();
+  updateDaily();
   await saveProgress(q.num, raw, uc[q.num]);
 }
 
@@ -426,6 +475,99 @@ function updateStats() {
   document.getElementById('pl').textContent=ans+' / '+tot+' 回答済み';
   document.getElementById('pp').textContent=pct+'%';
   document.getElementById('pf').style.width=pct+'%';
+}
+
+// ── Daily ────────────────────────────────────────
+function jstDay(t) { return new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }); }
+
+// 通知から開いたとき：未回答の問題から始める
+function startDaily() {
+  const un = DATA.map(function(_,i){return i;}).filter(function(i){return ua[DATA[i].num]===undefined;});
+  if (un.length) { fi = un; document.getElementById('fm').value = 'un'; }
+  pos = 0;
+}
+
+function updateDaily() {
+  const times = Object.values(ad).filter(Boolean);
+  const days = new Set(times.map(jstDay));
+  const today = jstDay(Date.now());
+  const n = times.filter(function(t){return jstDay(t)===today;}).length;
+  // 今日まだ解いていなければ昨日から遡って数える
+  const d = new Date();
+  if (!days.has(today)) d.setDate(d.getDate()-1);
+  let streak = 0;
+  while (days.has(jstDay(d))) { streak++; d.setDate(d.getDate()-1); }
+
+  document.getElementById('streak').textContent = streak ? '🔥 '+streak+'日連続' : '今日から始めよう';
+  document.getElementById('today-n').textContent = n;
+  document.getElementById('today-goal').textContent = DAILY_GOAL;
+  document.getElementById('today').classList.toggle('done', n >= DAILY_GOAL);
+
+  if (!DAILY_MODE) return;
+  const banner = document.getElementById('daily-banner');
+  const left = DATA.length - Object.keys(ua).length;
+  banner.classList.remove('hidden');
+  if (n >= DAILY_GOAL) banner.textContent = '🎉 今日のノルマ達成！この調子で続けよう';
+  else if (!left) banner.textContent = '全問回答済み！不正解の問題を見直そう';
+  else banner.textContent = '今日の問題：あと '+(DAILY_GOAL-n)+' 問でノルマ達成';
+}
+
+// ── Notification ─────────────────────────────────
+let notifOn = false;
+
+async function initNotif() {
+  const sel = document.getElementById('notif-hour');
+  const btn = document.getElementById('notif-btn');
+  const msg = document.getElementById('notif-msg');
+  if (!sel.options.length) {
+    for (let h=5; h<=23; h++) sel.add(new Option(h+':00', h));
+    sel.value = 20;
+    sel.onchange = function() { if (notifOn) toggleNotif(true); };
+  }
+  if (IS_IOS && !IS_STANDALONE) {
+    sel.disabled = btn.disabled = true;
+    msg.textContent = 'iPhoneでは、Safariの共有ボタン →「ホーム画面に追加」で追加したアイコンから開くと、通知をONにできます。';
+    return;
+  }
+  if (!pushSupported()) {
+    sel.disabled = btn.disabled = true;
+    msg.textContent = 'このブラウザは通知に対応していません。';
+    return;
+  }
+  setNotifUI(await pushCurrent(sb));
+}
+
+function setNotifUI(cur) {
+  const btn = document.getElementById('notif-btn');
+  const msg = document.getElementById('notif-msg');
+  notifOn = !!cur;
+  msg.className = 'notif-msg';
+  if (cur) {
+    document.getElementById('notif-hour').value = cur.hour;
+    btn.textContent = 'OFFにする';
+    btn.className = 'btn bs';
+    msg.textContent = '毎日 '+cur.hour+'時 にお知らせします（その日のノルマ達成済みなら通知しません）';
+  } else {
+    btn.textContent = 'ONにする';
+    btn.className = 'btn bp';
+    msg.textContent = '';
+  }
+}
+
+// keepOn: 通知ONのまま時刻だけ変更する
+async function toggleNotif(keepOn) {
+  const btn = document.getElementById('notif-btn');
+  const msg = document.getElementById('notif-msg');
+  const hour = +document.getElementById('notif-hour').value;
+  btn.disabled = true;
+  try {
+    if (notifOn && keepOn !== true) { await pushUnsubscribe(sb); setNotifUI(null); }
+    else { await pushSubscribe(sb, hour); setNotifUI({ hour: hour }); }
+  } catch (e) {
+    msg.className = 'notif-msg err';
+    msg.textContent = '通知の設定に失敗しました：' + (e.message || e);
+  }
+  btn.disabled = false;
 }
 </script>
 </body>
