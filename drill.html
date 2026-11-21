@@ -195,6 +195,7 @@ select{border:1px solid #ccc;border-radius:8px;padding:6px 10px;font-size:13px;b
         <div id="ans-body"></div>
         <div class="check-row">
           <button class="btn bp" id="check-btn" onclick="check()">確認</button>
+          <button class="btn bs hidden" id="retry-btn" onclick="retry()">↻ もう一度解く</button>
         </div>
         <div class="result" id="res"></div>
       </div>
@@ -381,8 +382,8 @@ function renderAnsBody(q) {
     html += '</div>';
     body.innerHTML = html;
   }
-  document.getElementById('check-btn').disabled = answered;
-  document.getElementById('check-btn').style.opacity = answered ? '0.5' : '1';
+  document.getElementById('check-btn').classList.toggle('hidden', answered);
+  document.getElementById('retry-btn').classList.toggle('hidden', !answered);
 }
 
 function onRadio(el) {
@@ -413,6 +414,18 @@ async function check() {
   updateStats();
   updateDaily();
   await saveProgress(q.num, raw, uc[q.num]);
+}
+
+// 回答済みの問題を未回答の状態に戻す。保存済みの結果は、解き直して「確認」したときに上書きされる
+function retry() {
+  const q = cq();
+  delete ua[q.num];
+  delete uc[q.num];
+  renderAnsBody(q);
+  const res = document.getElementById('res');
+  res.style.display = 'none';
+  res.innerHTML = '';
+  updateStats();
 }
 
 function showRes(q, ans) {
